@@ -1,4 +1,5 @@
 'use strict';
+const _ = require('lodash');
 
 module.exports = function(environment) {
   let ENV = {
@@ -47,5 +48,26 @@ module.exports = function(environment) {
     // here you can enable a production-specific feature
   }
 
-  return ENV;
+
+  //THIS IS NOT WORKING (I THINK)
+  var envPromise = new Promise(function(resolve, reject){
+    if(process.env.DEPLOY_TARGET){
+      console.log('resolving :' + process.env.DEPLOY_TARGET);
+      try{
+        const targetENVs = require('./environment-' + process.env.DEPLOY_TARGET + '-config.js');
+        ENV = _.merge(
+                ENV,
+                targetENVs || {});
+        resolve(ENV);
+      }catch(err) {
+        console.log(err);
+        console.log('No environment config file found for target ' + process.env.DEPLOY_TARGET + ', running with default options');
+        resolve(ENV);
+      }
+    }
+    reject();
+  });
+
+  return envPromise;
+  //return ENV;
 };
