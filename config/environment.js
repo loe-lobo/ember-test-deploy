@@ -1,6 +1,13 @@
 'use strict';
 const _ = require('lodash');
 
+function mergeCspData(envValue, targetValue, key){
+  //little hack to handle the CSP policies
+  if(typeof envValue === 'string' && key.endsWith('-src') && Array.isArray(targetValue)){
+    return envValue + ' ' + targetValue.join(' '); 
+  }
+}
+
 module.exports = function(environment) {
   let ENV = {
     modulePrefix: 'test-deploy',
@@ -16,6 +23,19 @@ module.exports = function(environment) {
         // Prevent Ember Data from overriding Date.parse.
         Date: false
       }
+    },
+
+    contentSecurityPolicy : 
+    {
+      'default-src': ['lalalal bbbb'].join(' '),
+      'worker-src': ['lalalal bbbb'].join(' '),
+      'img-src': ['lalalal bbbb'].join(' '),
+      'style-src': ['lalalal bbbb'].join(' '),
+      'font-src': ['lalalal bbbb'].join(' '),
+      'connect-src': ['lalalal bbbb'].join(' '),
+      'script-src': ['lalalal bbbb'].join(' '),
+      'frame-src': ['lalalal bbbb'].join(' '),
+      'media-src': ['lalalal bbbb'].join(' ')
     },
 
     APP: {
@@ -49,25 +69,20 @@ module.exports = function(environment) {
   }
 
 
-  //THIS IS NOT WORKING (I THINK)
-  var envPromise = new Promise(function(resolve, reject){
-    if(process.env.DEPLOY_TARGET){
-      console.log('resolving :' + process.env.DEPLOY_TARGET);
-      try{
-        const targetENVs = require('./environment-' + process.env.DEPLOY_TARGET + '-config.js');
-        ENV = _.merge(
-                ENV,
-                targetENVs || {});
-        resolve(ENV);
-      }catch(err) {
-        console.log(err);
-        console.log('No environment config file found for target ' + process.env.DEPLOY_TARGET + ', running with default options');
-        resolve(ENV);
-      }
+  if(process.env.DEPLOY_TARGET){
+    console.log('resolving :' + process.env.DEPLOY_TARGET);
+    try{
+      const targetENV = require('./environment-' + process.env.DEPLOY_TARGET + '-config.js');
+      ENV = _.mergeWith(
+        ENV,
+        targetENV || {},
+        mergeCspData
+     );
+    }catch(err) {
+      console.log(err);
+      console.log('No environment config file found for target ' + process.env.DEPLOY_TARGET + ', running with default options');
     }
-    reject();
-  });
+  }
 
-  return envPromise;
-  //return ENV;
+  return ENV;
 };
